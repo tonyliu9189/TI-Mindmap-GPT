@@ -31,6 +31,15 @@ from PIL import Image as PilImage
 import io
 from streamlit_pdf_viewer import pdf_viewer
 
+#Navigator import
+import ti_navigator
+#Import screenshot
+import ti_screenshot
+
+# Check if static directory exists, if not, create it  
+if not os.path.exists('./static'):  
+    os.makedirs('./static')
+
 def scrape_text(url):
     # Add user-agent to avoid issue when scrapping most website
     headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"}
@@ -479,44 +488,44 @@ title Lazarus Group Operation Blacksmith
 """
 
 #Function to provide ATT&CK Matrix for Enterprise layer json file
-def attack_layer(text, client):
-  # Define the SYSTEM prompt
-  system_prompt_attack_layer = (
-      f"You are tasked with creating an ATT&CK Matrix for Enterprise layer json file with attack version 14, navigator 4.9.1, layer version 4.5 to load a layer in MITRE ATT&CK Navigator. \n" 
-      "Use {ttptable} as input. Print just json content, avoiding including any additional text in the response. In domain field use enterprise-attack."
-  )
-  # Define the USER prompt
-  user_prompt_attack_layer = (
-      f"Title:  Enterprise techniques used by 2015 Ukraine Electric Power Attack, ATT&CK campaign C0028 (v1.0): Table: {prompt_table}"   
-  )
-  # Define the ASSISTANT prompt
-  assistant_prompt_attack_layer = (
-      f"{prompt_response}"   
-  )
-  if service_selection == "OpenAI":
-        # OpenAI API call
-        response = client.chat.completions.create(
-            model="gpt-4-1106-preview",
-            messages=[
-                {"role": "system", "content": system_prompt_attack_layer},
-                {"role": "user", "content": user_prompt_attack_layer},
-                {"role": "assistant", "content": assistant_prompt_attack_layer},
-		        {"role": "user", "content": input_text},
-            ],
-        )
-        return response.choices[0].message.content
-  elif service_selection == "Azure OpenAI":
-        # Azure OpenAI API call
-        response = client.chat.completions.create(
-            model = deployment_name,
-            messages=[
-                {"role": "system", "content": system_prompt_attack_layer},
-                {"role": "user", "content": user_prompt_attack_layer},
-                {"role": "assistant", "content": assistant_prompt_attack_layer},
-		        {"role": "user", "content": input_text},
-            ],
-        )
-        return response.choices[0].message.content
+#def attack_layer(text, client):
+#  # Define the SYSTEM prompt
+#  system_prompt_attack_layer = (
+#      f"You are tasked with creating an ATT&CK Matrix for Enterprise layer json file with attack version 14, navigator 4.9.1, layer version 4.5 to load a layer in MITRE ATT&CK Navigator. \n" 
+#      "Use {ttptable} as input. Print just json content, avoiding including any additional text in the response. In domain field use enterprise-attack."
+#  )
+#  # Define the USER prompt
+#  user_prompt_attack_layer = (
+#      f"Title:  Enterprise techniques used by 2015 Ukraine Electric Power Attack, ATT&CK campaign C0028 (v1.0): Table: {prompt_table}"   
+#  )
+#  # Define the ASSISTANT prompt
+#  assistant_prompt_attack_layer = (
+#      f"{prompt_response}"   
+#  )
+#  if service_selection == "OpenAI":
+#        # OpenAI API call
+#        response = client.chat.completions.create(
+#            model="gpt-4-1106-preview",
+#            messages=[
+#                {"role": "system", "content": system_prompt_attack_layer},
+#                {"role": "user", "content": user_prompt_attack_layer},
+#                {"role": "assistant", "content": assistant_prompt_attack_layer},
+#		        {"role": "user", "content": input_text},
+#            ],
+#        )
+#        return response.choices[0].message.content
+#  elif service_selection == "Azure OpenAI":
+#        # Azure OpenAI API call
+#        response = client.chat.completions.create(
+#            model = deployment_name,
+#            messages=[
+#                {"role": "system", "content": system_prompt_attack_layer},
+#                {"role": "user", "content": user_prompt_attack_layer},
+#                {"role": "assistant", "content": assistant_prompt_attack_layer},
+#		        {"role": "user", "content": input_text},
+#            ],
+#        )
+#        return response.choices[0].message.content
 
 #Function to provide a list of TTPs order by execution time
 def ttp_list(text, ttptable, client):
@@ -885,7 +894,7 @@ with col2:
     scrape_button = form.form_submit_button("Scrape it")
     form.write("*By clicking 'Scrape it,' the data from any previous session is deleted, and a new working session will be started.*")
     #st.markdown("*Session keys are retained until the entire page is refreshed.*")
-    
+
     # Initialize variables in session state  
     if 'text' not in st.session_state:  
         st.session_state['text'] = ""
@@ -903,7 +912,7 @@ with col2:
         st.session_state['mindmap_code'] = ""  # Clear mindmap_code when new URL is scraped
         st.session_state['ttptable'] = ""
         st.session_state['attackpath'] = ""
-        
+    
         # Check if the content is related to cybersecurity
         #relevance_check = check_content_relevance(text2, client, service_selection)
         #if "not related to cybersecurity" in relevance_check:
@@ -915,7 +924,7 @@ with col2:
         #st.write(text)
 
 #Insert containers separated into tabs.
-tab1, tab2, tab3, tab4 = st.tabs(["🗃 Main", "💾 AI Chat with your data", "📈 Pdf Report", "🗃️ Conf file (future release🚧)"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs(["🗃 Main", "💾 AI Chat with your data", "📈 Pdf Report", "🗃️ Conf file (future release🚧)", "Screenshot"])
 
 # Form for URL input
 with tab1:  
@@ -930,7 +939,8 @@ with tab1:
         submit_cb_ioc = form.checkbox("🧐I want to extract IOCs (if present)",value=True)  
         submit_cb_ttps = form.checkbox("📊Extract adversary tactics, techniques, and procedures (TTPs)",value=True)  
         submit_cb_ttps_by_time = form.checkbox("🕰️TTPs ordered by execution time",value=True)  
-        submit_cb_ttps_timeline = form.checkbox("📈TTPs (Tactics, Techniques, and Procedures) graphic timeline",value=True)  
+        submit_cb_ttps_timeline = form.checkbox("📈TTPs (Tactics, Techniques, and Procedures) graphic timeline",value=True)
+        submit_cb_navigator = form.checkbox("📈Mitre Navigator",value=True)
       
     with cols[0]:  
         submit_button = form.form_submit_button("Generate")  
@@ -1038,13 +1048,35 @@ with tab1:
                 html(mermaid_timeline_graph(mermaid_timeline), width=1500, height=1500)
                 mermaid_link2 = genPakoLink(mermaid_timeline)
                 st.link_button("Open code in Mermaid.live", mermaid_link2)
+
+            #Mitre Navigator
+            if submit_cb_navigator:
+                mitre_layer = ti_navigator.attack_layer(text, client, service_selection, deployment_name)
+                st.write("### MITRE Navigator Layer json file")
+                unique_id = str(uuid4())  # Create a unique ID  
+                file_name = f"./static/{unique_id}.json"  # Create a file name using the unique ID and specify directory    
+  
+                # Write the layer data to a file  
+                with open(file_name, 'w') as f:  
+                    f.write(mitre_layer) 
+
+                streamlit_base_url = "https://ti-mindmap-branch.streamlit.app"
+                st.write(mitre_layer)
+                st.markdown(f"[![Mitre layer](./app/static/{unique_id}.json)]({streamlit_base_url}/app/static/{unique_id}.json)")
+
+                # Define the URL for the MITRE Navigator with your layer  
+                layer_url = f"{streamlit_base_url}/app/static/{unique_id}.json"  
+                navigator_url = f"https://mitre-attack.github.io/attack-navigator/#layerURL={layer_url}"  
+  
+                # Embed the Navigator in an iframe  
+                st.markdown(f'<iframe src="{navigator_url}" width="100%" height="600px"></iframe>', unsafe_allow_html=True)
                 
     elif submit_button and not client:
         st.error("Please enter a valid OpenAI API key to generate the mindmap.")
 
 #TAB2   
 with tab2:
-    st.header("💾 AI Chat with your data")
+    st.header("💾 TI Chat")
     # Process the text using the selected service
     knowledge_base = process_text(st.session_state['text'], service_selection)
     # Initialize chat history in session state if it does not exist  
@@ -1142,7 +1174,6 @@ with tab3:
                     st.write("### TTPs table")  
                     st.write(ttptable)  
   
-                    # Check if attackpath exists in session state  
                     # Check if attackpath exists in session state 
                     if st.session_state['attackpath']:
                         attackpath = st.session_state['attackpath']  
@@ -1164,3 +1195,8 @@ with tab3:
 with tab4:
     st.write("🗃️ Conf file - future release🚧")
     st.write("Work in progress")
+
+#TAB5
+with tab5:
+    if scrape_button:  
+        ti_screenshot.take_screenshot(url)
