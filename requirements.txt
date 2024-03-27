@@ -14,6 +14,6 @@ pillow
 streamlit-pdf-viewer
 ipython
 reportlab
-json
+#json
 seleniumbase
 webdriver-manager
