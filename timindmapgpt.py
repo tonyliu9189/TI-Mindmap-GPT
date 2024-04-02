@@ -34,7 +34,7 @@ from streamlit_pdf_viewer import pdf_viewer
 #Navigator import
 import ti_navigator
 #Import screenshot
-import ti_screenshot
+#import ti_screenshot
 
 # Check if static directory exists, if not, create it  
 if not os.path.exists('./static'):  
@@ -894,6 +894,7 @@ with col2:
     scrape_button = form.form_submit_button("Scrape it")
     form.write("*By clicking 'Scrape it,' the data from any previous session is deleted, and a new working session will be started.*")
     #st.markdown("*Session keys are retained until the entire page is refreshed.*")
+    #st.markdown("[![Click me](./app/static/1f371aac-044d-4376-99ea-5cd5d53ae695.json)](http://127.0.0.1:8501/app/static/1f371aac-044d-4376-99ea-5cd5d53ae695.json)")
 
     # Initialize variables in session state  
     if 'text' not in st.session_state:  
@@ -912,6 +913,7 @@ with col2:
         st.session_state['mindmap_code'] = ""  # Clear mindmap_code when new URL is scraped
         st.session_state['ttptable'] = ""
         st.session_state['attackpath'] = ""
+        st.session_state['mitre_layer'] = ""
     
         # Check if the content is related to cybersecurity
         #relevance_check = check_content_relevance(text2, client, service_selection)
@@ -924,7 +926,7 @@ with col2:
         #st.write(text)
 
 #Insert containers separated into tabs.
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["🗃 Main", "💾 AI Chat with your data", "📈 Pdf Report", "🗃️ Conf file (future release🚧)", "Screenshot"])
+tab1, tab2, tab3, tab4 = st.tabs(["🗃 Main", "💾 AI Chat with your data", "📈 Pdf Report", "🗃️ Conf file (future release🚧)"])
 
 # Form for URL input
 with tab1:  
@@ -940,7 +942,7 @@ with tab1:
         submit_cb_ttps = form.checkbox("📊Extract adversary tactics, techniques, and procedures (TTPs)",value=True)  
         submit_cb_ttps_by_time = form.checkbox("🕰️TTPs ordered by execution time",value=True)  
         submit_cb_ttps_timeline = form.checkbox("📈TTPs (Tactics, Techniques, and Procedures) graphic timeline",value=True)
-        submit_cb_navigator = form.checkbox("📈Mitre Navigator",value=True)
+        submit_cb_navigator = form.checkbox("📈MITRE Navigator Layer",value=True)
       
     with cols[0]:  
         submit_button = form.form_submit_button("Generate")  
@@ -1052,24 +1054,42 @@ with tab1:
             #Mitre Navigator
             if submit_cb_navigator:
                 mitre_layer = ti_navigator.attack_layer(text, client, service_selection, deployment_name)
+                # Check if mitre_layer is valid JSON
+                try:
+                    json.loads(mitre_layer)
+                except json.JSONDecodeError:
+                    st.error("The generated layer is not a valid JSON file.")
+                    if st.button("Click here to regenerate the layer"):
+                        mitre_layer = ti_navigator.attack_layer(text, client, service_selection, deployment_name)
+                        try:
+                            json.loads(mitre_layer)
+                        except json.JSONDecodeError:
+                            st.error("Failed to regenerate the layer. Please try again.")
+                            st.stop()  # Stop further execution
+                        else:
+                            st.success("Layer regenerated successfully.")
+
                 st.write("### MITRE Navigator Layer json file")
                 unique_id = str(uuid4())  # Create a unique ID  
-                file_name = f"./static/{unique_id}.json"  # Create a file name using the unique ID and specify directory    
-  
+                file_name = f"./static/{unique_id}.json"  # Create a file name using the unique ID and specify directory
+                
                 # Write the layer data to a file  
                 with open(file_name, 'w') as f:  
                     f.write(mitre_layer) 
 
                 streamlit_base_url = "https://ti-mindmap-branch.streamlit.app"
-                st.write(mitre_layer)
-                st.markdown(f"[![Mitre layer](./app/static/{unique_id}.json)]({streamlit_base_url}/app/static/{unique_id}.json)")
+                #streamlit_base_url = "http://127.0.0.1:8501"
 
                 # Define the URL for the MITRE Navigator with your layer  
-                layer_url = f"{streamlit_base_url}/app/static/{unique_id}.json"  
+                layer_url = f"{streamlit_base_url}/app/static/{unique_id}.json"
                 navigator_url = f"https://mitre-attack.github.io/attack-navigator/#layerURL={layer_url}"  
   
                 # Embed the Navigator in an iframe  
                 st.markdown(f'<iframe src="{navigator_url}" width="100%" height="600px"></iframe>', unsafe_allow_html=True)
+                st.write("The previous layer was generated from the following JSON file:")
+                st.json(mitre_layer, expanded=True)
+                st.markdown(f"📃 [![Mitre layer json file](./app/static/{unique_id}.json)]({streamlit_base_url}/app/static/{unique_id}.json)")
+
                 
     elif submit_button and not client:
         st.error("Please enter a valid OpenAI API key to generate the mindmap.")
@@ -1197,6 +1217,6 @@ with tab4:
     st.write("Work in progress")
 
 #TAB5
-with tab5:
-    if scrape_button:  
-        ti_screenshot.take_screenshot(url)
+#with tab5:
+#    if scrape_button:  
+#        ti_screenshot.take_screenshot(url)
